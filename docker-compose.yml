@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  api:
+    build: ./api
+    container_name: llama-api
+    depends_on:
+      db:
+        condition: service_healthy
+      ray:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: llamadb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}   # uncomment if using OpenAI embeddings
+      PGVECTOR_SCHEMA: public
+      PGVECTOR_TABLE: data_llama_index
+    ports:
+      - "8000:8000"
+    networks:
+      - llama-net
+    env_file:
+      - .env
+    command: >
+      uvicorn app:app --host 0.0.0.0 --port 8000 --log-level info
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: llama-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: llamadb
+    ports:
+      - "5432:5432"
+      # - "5433:5432"   # <- uncomment and use this if 5432 is busy on your host
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - llama-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d llamadb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  ray:
+    image: rayproject/ray:2.35.0-py311-aarch64   # ARM64 build for Apple Silicon
+    container_name: llama-ray
+    command: >
+      ray start --head
+      --dashboard-host=0.0.0.0 --dashboard-port=8265
+      --block
+    ports:
+      - "8265:8265"   # Ray dashboard
+      - "6379:6379"   # Redis (Ray internal)
+    networks:
+      - llama-net
+    healthcheck:
+      test: ["CMD-SHELL", "ray status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pgdata:
+
+networks:
+  llama-net:
+    driver: bridge

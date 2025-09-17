@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+llama-index
+llama-index-vector-stores-postgres
+llama-index-llms-groq
+psycopg2-binary
