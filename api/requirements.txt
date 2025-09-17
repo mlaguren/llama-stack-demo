@@ -1,6 +1,11 @@
 fastapi
 uvicorn[standard]
+langsmith==0.4.28
 llama-index
 llama-index-vector-stores-postgres
 llama-index-llms-groq
 psycopg2-binary
+pypdf
+python-multipart
+
+

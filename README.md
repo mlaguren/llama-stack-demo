@@ -59,6 +59,10 @@ Create .env file and add your GROQ API Key
 
 ```bash
 GROQ_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key
+LANGSMITH_API_KEY=you_api_key
+LANGSMITH_PROJECT=project_name
+LANGSMITH_TRACING=true
 ```
 Bring up llama-stack-demo
 ```bash
