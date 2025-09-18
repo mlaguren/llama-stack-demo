@@ -9,5 +9,3 @@ llama-index-embeddings-huggingface
 psycopg2-binary
 pypdf
 python-multipart
-
-

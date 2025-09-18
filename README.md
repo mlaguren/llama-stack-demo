@@ -71,8 +71,8 @@ docker compose up --build
 ```
 Services:
 
-API → http://localhost:8000
-Ray Cluster → http://localhost:8265/
+* API → http://localhost:8000
+* Ray Cluster → http://localhost:8265/
 
 # Validate Environment
 
@@ -85,7 +85,10 @@ curl -X POST http://localhost:8000/ingest \
 Should get the following response:
 
 ```json
-{"status":"success","message":"Document ingested."}
+{
+    "status": "success",
+    "message": "Document ingested."
+}
 ```
 To validate your AI Keys:
 ```bash
@@ -98,4 +101,44 @@ Should yield the following response:
 
 ```json
 {"answer":"Llamas"}
+```
+
+Uploading a pdf
+
+```bash
+curl -X POST "http://localhost:8000/ingest_pdf" \
+  -F "file=@path-to-pdf-file"
+```
+
+Response:
+```json
+{"status":"success","filename":"legends.pdf","pages_ingested":134,"chunks_ingested":138,"chars_ingested":269436}
+```
+
+Query PDF file
+```bash
+curl -X POST "http://localhost:8000/query" \          
+     -H "Content-Type: application/json" \
+     -d '{"question":"Summarize the Fox and the Wolf?"}'
+```
+
+Response
+```json
+{
+    "answer": "The fox and the wolf lived together in the same den, with the wolf oppressing the fox. The fox advised the wolf to be kind and abandon wickedness, warning him of the cunning nature of humans. The wolf rejected the advice and struck the fox, who apologized and recited verses seeking forgiveness. The wolf accepted the apology but warned the fox to not speak out of turn. The fox, realizing the wolf's intentions, decided to act with caution and dissimulation. Despite enduring mistreatment, the fox remained patient and cautious, ultimately outsmarting the wolf by avoiding a potential trap in a vineyard.",
+    "sources": [
+        {
+            "node_id": "b6829e9a-38f1-4bb9-88ee-59607745308e",
+            "score": 0.6338359088155088,
+            "filename": "legends.pdf",
+            "page_number": 106
+        },
+        {
+            "node_id": "210f70c3-91c4-423d-8237-0d14f445df2c",
+            "score": 0.5692067999120484,
+            "filename": "legends.pdf",
+            "page_number": 107
+        }
+    ]
+}
 ```
