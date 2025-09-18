@@ -39,14 +39,13 @@ flowchart LR
     V["Postgres PGVector"]
   end
 
-
   %% Flows
   F <--> |/query and response| Serve
   F <--> |/ingest and ack| Serve
 
   R1 --> |store and retrieve embeddings| V
   R2 --> |store and retrieve embeddings| V
-```
+
 
 ## Quick Start
 ```bash
@@ -71,8 +70,12 @@ docker compose up --build
 ```
 Services:
 
-* API → http://localhost:8000
-* Ray Cluster → http://localhost:8265/
+| Service           | URL / Port                                     | Notes                                                     |
+| ----------------- | ---------------------------------------------- | --------------------------------------------------------- |
+| **API**           | [http://localhost:8000](http://localhost:8000) | FastAPI ingestion & query endpoints                       |
+| **Ray Dashboard** | [http://localhost:8265](http://localhost:8265) | Cluster status, logs, and **profiling (CPU flamegraphs)** |
+| **Postgres**      | localhost:5432                                 | Vector DB with PGVector extension                         |
+
 
 # Validate Environment
 
@@ -142,3 +145,37 @@ Response
     ]
 }
 ```
+
+# Infra: Custom Ray Image with Profiling
+
+The Ray Dashboard profiling tools (CPU flamegraphs, usage reports) require py-spy with root permissions.
+This project includes a custom image in infra/ray/Dockerfile
+ that:
+
+* Builds and installs py-spy (compiled via Rust for ARM64).
+* Configures it with setuid root so it can attach to Ray worker processes.
+* Provides a minimal sudo shim so Ray can invoke it.
+* Symlinks it to /home/ray/anaconda3/bin/py-spy where the dashboard expects it.
+
+docker-compose.yml is already configured to use this image and sets the necessary capabilities:
+```yaml
+cap_add:
+  - SYS_PTRACE
+security_opt:
+  - seccomp=unconfined
+  - apparmor=unconfined
+```
+
+## Troubleshooting
+
+### Flamegraph shows “Permission denied (os error 13)”
+* Ensure you built the custom Ray image: docker compose build ray
+* Confirm inside the container:
+```bash
+docker exec -it llama-ray bash -lc 'which py-spy && ls -l $(which py-spy) && sudo -n py-spy --version'
+```
+### services.container_name must be a mapping
+* Check your docker-compose.yml for duplicate or mis-indented ray: blocks. Only one ray service should exist under services:.
+
+### apt-get exit 100 during build
+* The Ray base image on ARM doesn’t always support apt installs cleanly. The provided multi-stage infra/ray/Dockerfile avoids this by compiling py-spy with Cargo.

@@ -14,7 +14,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       GROQ_API_KEY: ${GROQ_API_KEY}
-      # OPENAI_API_KEY: ${OPENAI_API_KEY}   # uncomment if using OpenAI embeddings
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
       PGVECTOR_SCHEMA: public
       PGVECTOR_TABLE: data_llama_index
     ports:
@@ -36,7 +36,6 @@ services:
       POSTGRES_DB: llamadb
     ports:
       - "5432:5432"
-      # - "5433:5432"   # <- uncomment and use this if 5432 is busy on your host
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
@@ -49,7 +48,9 @@ services:
       start_period: 5s
 
   ray:
-    image: rayproject/ray:2.35.0-py311-aarch64   # ARM64 build for Apple Silicon
+    build:
+      context: ./infra/ray
+    image: local/ray-with-pyspy:aarch64
     container_name: llama-ray
     command: >
       ray start --head
@@ -60,6 +61,13 @@ services:
       - "6379:6379"   # Redis (Ray internal)
     networks:
       - llama-net
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+    environment:
+      RAY_DASHBOARD_ENABLE_PROFILING: "1"
     healthcheck:
       test: ["CMD-SHELL", "ray status || exit 1"]
       interval: 10s
