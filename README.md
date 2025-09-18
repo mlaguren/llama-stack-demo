@@ -95,7 +95,7 @@ Should get the following response:
 ```
 To validate your AI Keys:
 ```bash
-curl -X POST http://localhost:8000/query \ 
+curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What animals work well in clusters?"}'
 ```
@@ -120,7 +120,7 @@ Response:
 
 Query PDF file
 ```bash
-curl -X POST "http://localhost:8000/query" \          
+curl -X POST "http://localhost:8000/query" \
      -H "Content-Type: application/json" \
      -d '{"question":"Summarize the Fox and the Wolf?"}'
 ```
@@ -165,7 +165,6 @@ security_opt:
   - seccomp=unconfined
   - apparmor=unconfined
 ```
-
 ## Troubleshooting
 
 ### Flamegraph shows “Permission denied (os error 13)”
