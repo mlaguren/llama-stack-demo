@@ -49,9 +49,10 @@ flowchart LR
 ```
 
 ## Quick Start
-
+```bash
 git clone https://github.com/mlaguren/llama-stack-demo.git
 cd llama-stack-demo
+```
 
 # set your Groq API key
 
