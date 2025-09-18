@@ -49,16 +49,21 @@ flowchart LR
 ```
 
 ## Quick Start
-
+```bash
 git clone https://github.com/mlaguren/llama-stack-demo.git
 cd llama-stack-demo
+```
 
-# set your Groq API key
+# set your API keys
 
 Create .env file and add your GROQ API Key
 
 ```bash
 GROQ_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key
+LANGSMITH_API_KEY=you_api_key
+LANGSMITH_PROJECT=project_name
+LANGSMITH_TRACING=true
 ```
 Bring up llama-stack-demo
 ```bash
@@ -67,6 +72,7 @@ docker compose up --build
 Services:
 
 API → http://localhost:8000
+Ray Cluster → http://localhost:8265/
 
 # Validate Environment
 
