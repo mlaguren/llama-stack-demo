@@ -1,5 +1,7 @@
 from __future__ import annotations  # must be first
 
+import anyio
+
 import os, io, logging
 from typing import Optional, List
 
@@ -190,6 +192,8 @@ def health():
 @traceable
 @app.post("/ingest")
 def ingest_doc(req: IngestRequest):
+    if INDEX is None:
+       raise HTTPException(status_code=503, detail="Index not initialized")
     with trace("ingest_doc", run_type="chain",
                inputs={"id": req.id, "text_len": len(req.text or "")},
                tags=["ingest", "text"]) as run:
@@ -207,7 +211,7 @@ def ingest_doc(req: IngestRequest):
         except Exception as e:
             logging.exception("Ingest failed")
             run.add_outputs({"error": str(e)})
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
 # -------- PDF ingest with page-splitting + chunking --------
 @traceable
@@ -221,19 +225,23 @@ async def ingest_pdf(file: UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
             contents = await file.read()
-            pages = extract_pdf_texts(contents)
+            # Basic size guard (tune via env if desired)
+            max_mb = int(os.getenv("MAX_PDF_MB", "20"))
+            if len(contents) > max_mb * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="File too large")
+            pages = await anyio.to_thread.run_sync(extract_pdf_texts, contents)
             docs = build_page_documents(pages, file.filename)
             if not docs:
                 raise HTTPException(status_code=422, detail="No text extracted from PDF")
 
             with trace("chunking", run_type="tool",
                        inputs={"num_pages": len(docs), "chunk_size": CHUNK_SIZE, "overlap": CHUNK_OVERLAP}) as t:
-                nodes = chunk_documents(docs)
+                nodes = await anyio.to_thread.run_sync(chunk_documents, docs)
                 t.add_outputs({"num_nodes": len(nodes)})
 
             with trace("index.insert_nodes", run_type="retriever",
                        inputs={"num_nodes": len(nodes)}):
-                INDEX.insert_nodes(nodes)  # type: ignore
+                await anyio.to_thread.run_sync(INDEX.insert_nodes, nodes)  # type: ignore
 
             chars_ingested = sum(len(d.text) for d in docs)
             out = {

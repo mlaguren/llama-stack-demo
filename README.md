@@ -54,7 +54,7 @@ git clone https://github.com/mlaguren/llama-stack-demo.git
 cd llama-stack-demo
 ```
 
-# set your Groq API key
+# set your API keys
 
 Create .env file and add your GROQ API Key
 
@@ -72,6 +72,7 @@ docker compose up --build
 Services:
 
 API → http://localhost:8000
+Ray Cluster → http://localhost:8265/
 
 # Validate Environment
 
